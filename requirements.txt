@@ -1,0 +1,6 @@
+apex
+mmdet
+mmcv-full
+pycocotools; platform_system == "Linux"
+torch
+numpy
