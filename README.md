@@ -1,9 +1,8 @@
 # SeqTR
 
-![overview](./teaser/overview.pdf)  
-![architecture](./teaser/architecture.pdf)
+![overview](./teaser/overview.png)  
 
-This is the official implementation of [SeqTR: A Simple yet Universal Network for Visual Grounding](https://arxiv.org/abs/2203.16265), which simplifies and unifies the modelling for visual grounding tasks under a point prediction paradigm. 
+This is the official implementation of [SeqTR: A Simple yet Universal Network for Visual Grounding](https://arxiv.org/abs/2203.16265), which simplifies and unifies the modelling for visual grounding tasks under a novel point prediction paradigm. 
 
 <!-- To this end, different grounding tasks can be tackled in one network with the simple cross-entropy loss. We surpass or maintain on par with state-of-the-arts, and also outperform a set of larget-scale pre-trained models with much less expenditure, suggesting a simple and universal approach is indeed feasible. -->
 
@@ -15,14 +14,17 @@ This is the official implementation of [SeqTR: A Simple yet Universal Network fo
 pip install -r requirements.txt
 wget https://github.com/explosion/spacy-models/releases/download/en_vectors_web_lg-2.1.0/en_vectors_web_lg-2.1.0.tar.gz -O en_vectors_web_lg-2.1.0.tar.gz
 pip install en_vectors_web_lg-2.1.0.tar.gz
+```
+Then install SeqTR package in editable mode:
+```
 pip install -e .
 ```
 
 ### Data Preparation
 
-1. Download our [preprocessed json files](https://drive.google.com/drive/folders/1IXnSieVr5CHF2pVJpj0DlwC6R3SbfolU?usp=sharing) on six visual grounding datasets including the merged dataset for pre-training, and [pre-trained DarkNet-53 model weights](https://drive.google.com/drive/folders/1W8y_WS-8cnuU0LnF8e1v8ZowZvpEaolk?usp=sharing), put them under the data directory.
+1. Download our [preprocessed json files](https://drive.google.com/drive/folders/1IXnSieVr5CHF2pVJpj0DlwC6R3SbfolU?usp=sharing) including the merged dataset for pre-training, and [DarkNet-53 model weights](https://drive.google.com/drive/folders/1W8y_WS-8cnuU0LnF8e1v8ZowZvpEaolk?usp=sharing) trained on MS-COCO object detection task.
 2. Download the train2014 images from [mscoco](https://cocodataset.org/) or from [Joseph Redmon's mscoco mirror](https://pjreddie.com/projects/coco-mirror/), of which the download speed is faster than the official website.
-3. Download [original Flickr30K images](http://shannon.cs.illinois.edu/DenotationGraph/) and [ReferItGame images]().
+3. Download [original Flickr30K images](http://shannon.cs.illinois.edu/DenotationGraph/) and [ReferItGame images](https://drive.google.com/file/d/1R6Tm7tQTHCil6A_eOhjudK3rgaBxkD2t/view?usp=sharing).
 
 The project structure should look like the following:
 
@@ -60,36 +62,40 @@ The project structure should look like the following:
      | -- tools
      | -- teaser
 ```
-The darknet.weights excludes val/test images of RefCOCO/+/g datasets while yolov3.weights does not.
+Note that the darknet.weights excludes val/test images of RefCOCO/+/g datasets while yolov3.weights does not.
 
 ## Training
 
-We train SeqTR to perform grouning at bounding box level on a single V100 GPU, run the following script:
-```
-python tools/train.py configs/seqtr/detection/seqtr_det_[DATASET_NAME].py 
-```
-[DATASET_NAME] is one of "flickr30k", "referitgame-berkeley", "refcoco-unc", "refcocoplus-unc", "refcocog-umd", "refcocog-google".
+### Phrase Localization and Referring Expression Comprehension
 
-***
+We train SeqTR to perform grouning at bounding box level on a single V100 GPU. The following script performs the training:
+```
+python tools/train.py configs/seqtr/detection/seqtr_det_[DATASET_NAME].py --cfg-options ema=True
+```
+[DATASET_NAME] is one of "flickr30k", "referitgame-berkeley", "refcoco-unc", "refcocoplus-unc", "refcocog-umd", and "refcocog-google".
+
+### Referring Expression Segmentation
 
 To train SeqTR to generate the target sequence of ground-truth mask, which is then assembled into the predicted mask by connecting the points, run the following script:
 
 ```
-python tools/train.py configs/seqtr/segmentation/seqtr_mask_[DATASET_NAME].py
+python tools/train.py configs/seqtr/segmentation/seqtr_mask_[DATASET_NAME].py --cfg-options ema=True
 ```
 
-Note that instead of sampling 18 points and does not shuffle the sequence, for RefCOCO+ and RefCOCOg, we uniformly sample 12 points on the mask contour and randomly shffle the sequence with 20% percentage. Therefore to execute the training on RefCOCO+/g datasets, modify **num_ray** at line 1 to 18 and **model.head.shuffle_fraction** to 0.2 at line 35, in *configs/seqtr/segmentation/seqtr_mask_darknet.py*.
-
-## Pretraining
-
-```
-bash tools/dist_train.sh configs/seqtr/detection/seqtr_det_pretraining-vg.py 8
-```
+Note that instead of sampling 18 points and does not shuffle the sequence for RefCOCO dataset, for RefCOCO+ and RefCOCOg, we uniformly sample 12 points on the mask contour and randomly shffle the sequence with 20% percentage. Therefore, to execute the training on RefCOCO+/g datasets, modify **num_ray at line 1 to 18** and **model.head.shuffle_fraction to 0.2 at line 35**, in configs/seqtr/segmentation/seqtr_mask_darknet.py.
 
 ## Evaluation
 
 ```
 python tools/test.py [PATH_TO_CONFIG_FILE] --load-from [PATH_TO_CHECKPOINT_FILE]
+```
+
+## Pre-training + fine-tuning
+
+We train SeqTR on 8 V100 GPUs while disabling Large Scale Jittering (LSJ) and Exponential Moving Average (EMA):
+ 
+```
+bash tools/dist_train.sh configs/seqtr/detection/seqtr_det_pretraining-vg.py 8
 ```
 
 ## Models
@@ -112,6 +118,7 @@ python tools/test.py [PATH_TO_CONFIG_FILE] --load-from [PATH_TO_CHECKPOINT_FILE]
 <td>SeqTR on RES</td><td>67.26</td><td>69.79</td><td>64.12</td><td></td><td>54.14</td><td>58.93</td><td>48.19</td><td></td><td>-</td><td>55.67</td><td>55.64</td><td></td>
 </tr>
 </table>
+SeqTR* denotes that its visual encoder is initialized with yolov3.weights, while the visual encoder of the rest are initialized with darknet.weights.
 
 ## Citation
 
