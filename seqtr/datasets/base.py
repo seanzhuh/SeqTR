@@ -23,7 +23,7 @@ class BaseDataset(Dataset):
             'val_flickr30k', 'val_referitgame_berkeley']
         self.which_set = which_set
         if len(img_source) == 1:
-            assert img_source[0] in ['coco', 'vg', 'flickr', 'saiaprtc12']
+            assert img_source[0] in ['coco', 'visual-genome', 'flickr', 'saiaprtc12']
             self.imgsfile = imgsfile
         elif len(img_source) > 1:
             assert len(imgsfile) == len(img_source)
