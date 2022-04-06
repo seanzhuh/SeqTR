@@ -33,16 +33,16 @@ def log_loaded_info(ckpt, load_file):
         log_str += f"epoch: {ckpt['epoch']+1} lr: {ckpt['lr']:.6f}\n"
     if "best_det_acc" in ckpt:
         log_str += f"best det acc: {ckpt['best_det_acc']:.2f}\n"
-        best_det_acc = ckpt['best_det_acc']
-    if "best_mask_iou" in ckpt:
-        log_str += f"best mIoU: {ckpt['best_mask_iou']:.2f}\n"
-        best_mask_iou = ckpt['best_mask_iou']
+        best_d_acc = ckpt['best_det_acc']
+    if "best_miou" in ckpt:
+        log_str += f"best mIoU: {ckpt['best_miou']:.2f}\n"
+        best_miou = ckpt['best_miou']
     if "det_acc" in ckpt:
         log_str += f"loaded det acc: {ckpt['det_acc']:.2f}\n"
-    if "mask_iou" in ckpt:
-        log_str += f"loaded mIoU: {ckpt['mask_iou']:.2f}\n"
+    if "miou" in ckpt:
+        log_str += f"loaded mIoU: {ckpt['miou']:.2f}\n"
     logger.info(log_str)
-    return best_det_acc, best_mask_iou
+    return best_d_acc, best_miou
 
 
 # only for finetuning, if resume from pretraining, use load_checkpoint
@@ -50,7 +50,7 @@ def load_pretrained(model,
                     model_ema=None,
                     load_pretrained_from=None,
                     amp=False):
-    start_epoch, best_det_acc, best_mask_iou = -1, 0., 0.
+    start_epoch, best_d_acc, best_miou = -1, 0., 0.
     ckpt = torch.load(load_pretrained_from,
                       map_location=lambda storage, loc: storage.cuda())
     state, ema_state = ckpt['state_dict'], ckpt['ema_state_dict']
@@ -74,9 +74,9 @@ def load_pretrained(model,
     if 'amp' in ckpt and amp:
         apex.amp.load_state_dict(ckpt['amp'])
     if is_main():
-        best_det_acc, best_mask_iou = log_loaded_info(
+        best_d_acc, best_miou = log_loaded_info(
             ckpt, load_pretrained_from)
-    return start_epoch, best_det_acc, best_mask_iou
+    return start_epoch, best_d_acc, best_miou
 
 
 def load_checkpoint(model,
@@ -86,7 +86,7 @@ def load_checkpoint(model,
                     amp=False,
                     optimizer=None,
                     scheduler=None):
-    start_epoch, best_det_acc, best_mask_iou = -1, 0., 0.
+    start_epoch, best_d_acc, best_miou = -1, 0., 0.
     load_file = resume_from if resume_from is not None else load_from
     ckpt = torch.load(load_file,
                       map_location=lambda storage, loc: storage.cuda())
@@ -112,8 +112,8 @@ def load_checkpoint(model,
         if load_from is None and resume_from is not None:
             start_epoch = ckpt['epoch']
     if is_main():
-        best_det_acc, best_mask_iou = log_loaded_info(ckpt, load_file)
-    return start_epoch, best_det_acc, best_mask_iou
+        best_d_acc, best_miou = log_loaded_info(ckpt, load_file)
+    return start_epoch, best_d_acc, best_miou
 
 
 def save_checkpoint(work_dir, interval, model, model_ema, optimizer, scheduler, checkpoint):
@@ -143,7 +143,7 @@ def save_checkpoint(work_dir, interval, model, model_ema, optimizer, scheduler, 
         shutil.copyfile(latest_path, det_best_path)
         if is_main():
             logger.info(f"saved epoch {epoch} checkpoint at {det_best_path}")
-    if checkpoint['mask_iou'] > checkpoint['best_mask_iou']:
+    if checkpoint['miou'] > checkpoint['best_miou']:
         shutil.copyfile(latest_path, mask_best_path)
         if is_main():
             logger.info(f"saved epoch {epoch} checkpoint at {mask_best_path}")

@@ -124,48 +124,48 @@ def main_worker(cfg):
     for epoch in range(start_epoch + 1, cfg.scheduler_config.max_epoch):
         train_model(epoch, cfg, model, model_ema, optimizer, dataloaders[0])
 
-        det_acc, mask_iou = 0, 0
-        for eval_loader in dataloaders[1:]:
+        d_acc, miou = 0, 0
+        for _loader in dataloaders[1:]:
             if is_main():
                 logger.info("Evaluating dataset: {}".format(
-                    eval_loader.dataset.which_set))
-            set_det_acc, set_mask_iou = validate_model(
-                epoch, cfg, model, eval_loader)
+                    _loader.dataset.which_set))
+            set_d_acc, set_miou = validate_model(
+                epoch, cfg, model, _loader)
 
             if cfg.ema:
                 if is_main():
                     logger.info("Evaluating dataset using ema: {}".format(
-                        eval_loader.dataset.which_set))
+                        _loader.dataset.which_set))
                 model_ema.apply_shadow()
-                ema_set_det_acc, ema_set_mask_iou = validate_model(
-                    epoch, cfg, model, eval_loader)
+                ema_set_d_acc, ema_set_miou = validate_model(
+                    epoch, cfg, model, _loader)
                 model_ema.restore()
 
             if cfg.ema:
-                det_acc += ema_set_det_acc
-                mask_iou += ema_set_mask_iou
+                d_acc += ema_set_d_acc
+                miou += ema_set_miou
             else:
-                det_acc += set_det_acc
-                mask_iou += set_mask_iou
+                d_acc += set_d_acc
+                miou += set_miou
 
-        det_acc /= len(dataloaders[1:])
-        mask_iou /= len(dataloaders[1:])
+        d_acc /= len(dataloaders[1:])
+        miou /= len(dataloaders[1:])
 
         if is_main():
             save_checkpoint(cfg.work_dir,
                             cfg.save_interval,
                             model, model_ema, optimizer, scheduler,
                             {'epoch': epoch,
-                             'det_acc': det_acc,
-                             'mask_iou': mask_iou,
+                             'det_acc': d_acc,
+                             'miou': miou,
                              'best_det_acc': best_det_acc,
-                             'best_mask_iou': best_mask_iou,
+                             'best_miou': best_mask_iou,
                              'use_fp16': cfg.use_fp16})
 
         scheduler.step()
 
-        best_det_acc = max(det_acc, best_det_acc)
-        best_mask_iou = max(mask_iou, best_mask_iou)
+        best_det_acc = max(d_acc, best_det_acc)
+        best_mask_iou = max(miou, best_mask_iou)
 
         if cfg.distributed:
             dist.barrier()

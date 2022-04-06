@@ -11,7 +11,7 @@ train_pipeline = [
     # dict(type='Resize', img_scale=(640, 640)),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
-    dict(type='GenerateMaskVertices', num_ray=18, polar=False),
+    dict(type='SampleMaskVertices', num_ray=18, center_sampling=False),
     dict(type='DefaultFormatBundle'),
     dict(type='CollectData', keys=[
          'img', 'ref_expr_inds',

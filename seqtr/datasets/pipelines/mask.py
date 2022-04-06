@@ -5,12 +5,12 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class GenerateMaskVertices(object):
+class SampleMaskVertices(object):
     def __init__(self,
-                 polar=True,
-                 num_ray=36):
+                 center_sampling=False,
+                 num_ray=18):
         super().__init__()
-        self.polar = polar
+        self.center_sampling = center_sampling
         assert num_ray > 0
         self.num_ray = num_ray
 
@@ -19,7 +19,7 @@ class GenerateMaskVertices(object):
         assert results['with_mask']
         gt_mask = results['gt_mask'].masks[0]
         center, contour, KEEP = self.get_mass_center(gt_mask)
-        vertices = self.get_mask_vertices(
+        vertices = self.sample_mask_vertices(
             center, contour, KEEP, results['pad_shape'][:2])
         results['gt_mask_vertices'] = vertices
         results['mass_center'] = center
@@ -43,7 +43,7 @@ class GenerateMaskVertices(object):
             center = numpy.array([-1., -1.])
         return center, contour, KEEP
 
-    def get_mask_vertices(self, center, contour, KEEP=True, max_shape=None):
+    def sample_mask_vertices(self, center, contour, KEEP=True, max_shape=None):
         vertices = numpy.empty(
             (2, self.num_ray), dtype=numpy.float32)
         vertices.fill(-1)
@@ -54,7 +54,7 @@ class GenerateMaskVertices(object):
             vertices[:, :num_pts] = contour.transpose()
             return vertices
         inside_contour = cv2.pointPolygonTest(contour, center, False) > 0
-        if self.polar and inside_contour:
+        if self.center_sampling and inside_contour:
             c_x, c_y = center
             x = contour[:, 0] - center[0]
             y = contour[:, 1] - center[1]
