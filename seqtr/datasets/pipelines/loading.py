@@ -50,7 +50,7 @@ class LoadImageAnnotationsFromFile(object):
         self.with_bbox = with_bbox
         self.with_mask = with_mask
         assert dataset in ['RefCOCOUNC', 'RefCOCOGoogle', 'RefCOCOgUMD',
-                           'RefCOCOgGoogle', 'RefCOCOPlusUNC', 'ReferItGameBerkeley', 'Flickr30k', 'PretrainingVG']
+                           'RefCOCOgGoogle', 'RefCOCOPlusUNC', 'ReferItGameBerkeley', 'Flickr30k', 'Mixed']
         self.dataset = dataset
 
     def _load_img(self, results):
@@ -63,7 +63,7 @@ class LoadImageAnnotationsFromFile(object):
         elif "RefCOCO" in self.dataset:
             filepath = osp.join(results['imgsfile'],
                                 "COCO_train2014_%012d.jpg" % results['ann']['image_id'])
-        elif "PretrainingVG" == self.dataset:
+        elif "Mixed" == self.dataset:
             data_source = results['ann']['data_source']
             img_name = "COCO_train2014_%012d.jpg" if "coco" in data_source else "%d.jpg"
             img_name = img_name % results['ann']['image_id']

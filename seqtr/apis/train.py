@@ -46,7 +46,7 @@ def train_model(epoch,
     batches = len(loader)
     end = time.time()
 
-    det_acc_list, mask_iou_list, mask_acc_list, ie_list = [], [], [], []
+    det_acc_list, mask_iou_list, mask_acc_list = [], [], []
     loss_det_list, loss_mask_list = [], []
     for batch, inputs in enumerate(loader):
         data_time = time.time() - end
@@ -91,18 +91,16 @@ def train_model(epoch,
         pred_masks = predictions.pop('pred_masks')
 
         with torch.no_grad():
-            batch_det_acc, batch_mask_iou, batch_mask_acc_at_thrs, batch_ie = accuracy(
+            batch_det_acc, batch_mask_iou, batch_mask_acc_at_thrs = accuracy(
                 pred_bboxes, gt_bbox, pred_masks, gt_mask, is_crowd=is_crowd, device=device)
             if cfg.distributed:
                 batch_det_acc = reduce_mean(batch_det_acc)
                 batch_mask_iou = reduce_mean(batch_mask_iou)
                 batch_mask_acc_at_thrs = reduce_mean(batch_mask_acc_at_thrs)
-                batch_ie = reduce_mean(batch_ie)
 
         det_acc_list.append(batch_det_acc.item())
         mask_iou_list.append(batch_mask_iou)
         mask_acc_list.append(batch_mask_acc_at_thrs)
-        ie_list.append(batch_ie.item())
         loss_det_list.append(loss_det.item())
         loss_mask_list.append(loss_mask.item())
 
@@ -110,7 +108,6 @@ def train_model(epoch,
         mask_iou = torch.cat(mask_iou_list).mean().item()
         mask_acc = torch.vstack(
             mask_acc_list).mean(dim=0).tolist()
-        ie = sum(ie_list) / len(ie_list)
         if is_main():
             if batch % cfg.log_interval == 0 or batch == batches - 1:
                 logger = get_root_logger()
@@ -121,7 +118,7 @@ def train_model(epoch,
                             f"lr: {optimizer.param_groups[0]['lr']:.6f}, " +
                             f"DetACC@0.5: {det_acc:.2f}, " +
                             f"mIoU: {mask_iou:.2f}, " +
-                            f"MaskACC@0.5-0.9: [{mask_acc[0]:.2f}, {mask_acc[1]:.2f}, {mask_acc[2]:.2f},  {mask_acc[3]:.2f},  {mask_acc[4]:.2f}], " +
-                            f"IE: {ie:.2f}")
+                            f"MaskACC@0.5-0.9: [{mask_acc[0]:.2f}, {mask_acc[1]:.2f}, {mask_acc[2]:.2f},  {mask_acc[3]:.2f},  {mask_acc[4]:.2f}]"
+                            )
 
         end = time.time()

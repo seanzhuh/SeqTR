@@ -142,12 +142,12 @@ class Flickr30k(BaseDataset):
 
 
 @DATASETS.register_module()
-class PretrainingVG(BaseDataset):
+class Mixed(BaseDataset):
     def __init__(self, *args, **kwargs):
         which_set = kwargs['which_set']
-        super(PretrainingVG, self).__init__(*args, **kwargs)
+        super(Mixed, self).__init__(*args, **kwargs)
 
         if is_main():
             logger = get_root_logger()
-            logger.info(f'Pretraining-{which_set} size: {len(self)}')
-            logger.info(f'Pretraining tokens: {len(self.token2idx)}')
+            logger.info(f'Mixed-{which_set} size: {len(self)}')
+            logger.info(f'Mixed tokens: {len(self.token2idx)}')

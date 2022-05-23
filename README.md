@@ -23,8 +23,7 @@ pip install -e .
 ### Data Preparation
 
 1. Download our [preprocessed json files](https://drive.google.com/drive/folders/1IXnSieVr5CHF2pVJpj0DlwC6R3SbfolU?usp=sharing) including the merged dataset for pre-training, and [DarkNet-53 model weights](https://drive.google.com/drive/folders/1W8y_WS-8cnuU0LnF8e1v8ZowZvpEaolk?usp=sharing) trained on MS-COCO object detection task.
-2. Download the train2014 images from [mscoco](https://cocodataset.org/) or from [Joseph Redmon's mscoco mirror](https://pjreddie.com/projects/coco-mirror/), of which the download speed is faster than the official website.
-3. Download [original Flickr30K images](http://shannon.cs.illinois.edu/DenotationGraph/), [ReferItGame images](https://drive.google.com/file/d/1R6Tm7tQTHCil6A_eOhjudK3rgaBxkD2t/view?usp=sharing), and [Visual Genome images](http://visualgenome.org/api/v0/api_home.html).
+2. Download the train2014 images from [Joseph Redmon's mscoco mirror](https://pjreddie.com/projects/coco-mirror/), original [Flickr30K images](http://shannon.cs.illinois.edu/DenotationGraph/), [ReferItGame images](https://drive.google.com/file/d/1R6Tm7tQTHCil6A_eOhjudK3rgaBxkD2t/view?usp=sharing), and [Visual Genome images](http://visualgenome.org/api/v0/api_home.html).
 
 The project structure should look like the following:
 
@@ -42,7 +41,7 @@ The project structure should look like the following:
             | -- refcocoplus-unc
             | -- refcocog-umd
             | -- refcocog-google
-            | -- pretraining-vg 
+            | -- mixed
         | -- weights
             | -- darknet.weights
             | -- yolov3.weights
@@ -71,7 +70,7 @@ Note that the darknet.weights excludes val/test images of RefCOCO/+/g datasets w
 
 ### Phrase Localization and Referring Expression Comprehension
 
-We train SeqTR to perform grouning at bounding box level on a single V100 GPU. The following script performs the training:
+We train SeqTR to perform grouning at bounding box level on a single V100 GPU with 32 GB memory. The following script performs the training:
 ```
 python tools/train.py configs/seqtr/detection/seqtr_det_[DATASET_NAME].py --cfg-options ema=True
 ```
@@ -90,37 +89,98 @@ Note that instead of sampling 18 points and does not shuffle the sequence for Re
 ## Evaluation
 
 ```
-python tools/test.py [PATH_TO_CONFIG_FILE] --load-from [PATH_TO_CHECKPOINT_FILE]
+python tools/test.py [PATH_TO_CONFIG_FILE] --load-from [PATH_TO_CHECKPOINT_FILE] --cfg-options ema=True
 ```
+
+The script will evaluate both the performance of the model trained with and without EMA. 
 
 ## Pre-training + fine-tuning
 
-We train SeqTR on 8 V100 GPUs while disabling Large Scale Jittering (LSJ) and Exponential Moving Average (EMA):
+We pre-train SeqTR on 8 V100 GPUs with 32 GB memory:
  
 ```
-bash tools/dist_train.sh configs/seqtr/detection/seqtr_det_pretraining-vg.py 8
+bash tools/dist_train.sh configs/seqtr/detection/seqtr_det_mixed.py 8 --cfg-options scheduler_config.max_epoch=15 scheduler_config.decay_steps=[12] scheduler_config.warmup_epochs=1
 ```
+
+Then we fine-tune 5 epochs on down-stream datasets:
+
+```
+python tools/train.py configs/seqtr/detection/seqtr_det_[DATASET_NAME].py --finetune-from [PATH_TO_PRETRAINED_CHECKPOINT] --cfg-options scheduler_config.max_epoch=5 scheduler_config.decay_steps=[4] scheduler_config.warmup_epochs=0
+```
+
+Note that both during pre-training and fune-tuning stage, we disable Large Scale Jittering (LSJ) and Exponential Moving Average (EMA), so be cautious whether the LSJ is enabled or not during your fine-tuning stage. For example, one must comment out line 9-10 in configs/\_base\_/datasets/detection/refcoco-unc.py and do not comment out line 11, also, for evaluation, you should not add --cfg-options ema=True or set it to False.
 
 ## Models
 
+### RefCOCO
+
 <table>
-<th></th><th colspan="4">RefCOCO</th><th colspan="4">RefCOCO+</th><th colspan="4">RefCOCOg</th>
 <tr>
-<td></td><td>val</td><td>testA</td><td>testB</td><td>model</td><td>val</td><td>testA</td><td>testB</td><td>model</td><td>val-g</td><td>val-u</td><td>val-u</td><td>model</td>
+<td></td><td>val</td><td>testA</td><td>testB</td><td align="center">url</td>
 </tr>
 <tr>
-<td>SeqTR on REC</td><td>81.23</td><td>85.00</td><td>76.08</td><td></td><td>68.82</td><td>75.37</td><td>58.78</td><td></td><td>-</td><td>71.35</td><td>71.58</td><td></td>
+<td>SeqTR detection</td><td>81.23</td><td>85.00</td><td>76.08</td><td><a href="https://pan.baidu.com/s/1m70hE43XTqpUPaZ8rbPSDg?pwd=hh3q">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR* on REC</td><td>83.72</td><td>86.51</td><td>81.24</td><td></td><td>71.45</td><td>76.26</td><td>64.88</td><td></td><td>71.50</td><td>74.86</td><td>74.21</td><td></td>
+<td>SeqTR* detection</td><td>83.72</td><td>86.51</td><td>81.24</td><td><a href="https://pan.baidu.com/s/1QlisArPe8_XIxBLOzY247A?pwd=of7w">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR pre-trained+finetuned on REC</td><td>87.00</td><td>90.15</td><td>83.59</td><td></td><td>78.69</td><td>84.51</td><td>71.87</td><td></td><td>-</td><td>82.69</td><td>83.37</td><td></td>
+<td>pre-trained + fine-tuned SeqTR detection</td><td>87.00</td><td>90.15</td><td>83.59</td><td><a href="https://pan.baidu.com/s/1nC-DtTlAesSXYjUFzOnG6A?pwd=wknb">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR on RES</td><td>67.26</td><td>69.79</td><td>64.12</td><td></td><td>54.14</td><td>58.93</td><td>48.19</td><td></td><td>-</td><td>55.67</td><td>55.64</td><td></td>
+<td>SeqTR segmentation</td><td>67.26</td><td>69.79</td><td>64.12</td><td><a href="https://pan.baidu.com/s/1FEHxWwkhbN6ouwtSG3K2Tg?pwd=j978">model & log</a></td>
+</tr>
+<tr>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td>71.70</td><td>73.31</td><td>69/82</td><td><a href="">-</a></td>
 </tr>
 </table>
+
+### RefCOCO+
+
+<table>
+<tr>
+<td></td><td>val</td><td>testA</td><td>testB</td><td align="center">url</td>
+</tr>
+<tr>
+<td>SeqTR detection</td><td>68.82</td><td>75.37</td><td>58.78</td><td><a href="https://pan.baidu.com/s/10IXsNKDbsZ_zba8tQZPgkg?pwd=1vw8">model & log</a></td>
+</tr>
+<tr>
+<td>SeqTR* detection</td><td>71.45</td><td>76.26</td><td>64.88</td><td><a href="https://pan.baidu.com/s/1aa7fBWtOiaBlTYb7Tig6iw?pwd=o5vd">model & log</a></td>
+</tr>
+<tr>
+<td>pre-trained + fine-tuned SeqTR detection</td><td>78.69</td><td>84.51</td><td>71.87</td><td><a href="">-</a></td>
+</tr>
+<tr>
+<td>SeqTR segmentation</td><td>54.14</td><td>58.93</td><td>48.19</td><td><a href="">-</a></td>
+</tr>
+<tr>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td>63.04</td><td>66.73</td><td>58.97</td><td><a href="">-</a></td>
+</tr>
+</table>
+
+### RefCOCOg
+
+<table>
+<tr>
+<td></td><td>val-g</td><td align="center">url</td><td>val-u</td><td>val-u</td><td align="center">url</td>
+</tr>
+<tr>
+<td>SeqTR detection</td><td>-</td><td>-</td><td>71.35</td><td>71.58</td><td><a href="https://pan.baidu.com/s/1fObNiIxgWrBy31AkXj9krg?pwd=b6ji">model & log</a></td>
+</tr>
+<tr>
+<td>SeqTR* detection</td><td>71.50</td><td><a href="https://pan.baidu.com/s/1v_fEGMWVXPoQKueBoXcjDQ?pwd=d1kp">model & log</a></td><td>74.86</td><td>74.21</td><td><a href="https://pan.baidu.com/s/1g-3XdzLow27pcIUug2KuhA?pwd=23tj">model & log</a></td>
+</tr>
+<tr>
+<td>pre-trained + fine-tuned SeqTR detection</td><td>-</td><td><a>-</a></td><td>82.69</td><td>83.37</td><td><a href="https://pan.baidu.com/s/1-0a_qz8bHTzdbIsN5mDaOg?pwd=pji5">model & log</a></td>
+</tr>
+<tr>
+<td>SeqTR segmentation</td><td>-</td><td>-</td><td>55.67</td><td>55.64</td><td><a href="https://pan.baidu.com/s/18G6SSuEwEn0XtNEnj9taIg?pwd=ptpm">model & log</a></td>
+</tr>
+<tr>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td>-</td><td>-</td><td>64.69</td><td>65.74</td><td><a href="https://pan.baidu.com/s/1l-g4ji2T139MFxSBSOEGFQ?pwd=r36v">model & log</a></td>
+</tr>
+</table>
+
 SeqTR* denotes that its visual encoder is initialized with yolov3.weights, while the visual encoder of the rest are initialized with darknet.weights.
 
 ## Contributing

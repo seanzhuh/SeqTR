@@ -1,11 +1,13 @@
 import torch
 import random
 import torch.nn as nn
-from seqtr.models import HEADS
 import torch.nn.functional as f
-from seqtr.core.layers import LinearModule
+
 from mmdet.models.losses import CrossEntropyLoss
 from mmdet.models.utils import build_transformer
+
+from seqtr.models import HEADS
+from seqtr.core.layers import LinearModule
 from seqtr.core.losses import LabelSmoothCrossEntropyLoss
 
 
@@ -14,13 +16,13 @@ class SeqHead(nn.Module):
     def __init__(self,
                  in_ch=1024,
                  num_bin=1000,
-                 multi_task="none",
+                 multi_task=False,
                  shuffle_fraction=-1,
                  mapping="relative",
                  top_p=-1,
                  num_ray=18,
-                 det_coord=[-1],
-                 det_coord_weight=1.,
+                 det_coord=[0],
+                 det_coord_weight=1.5,
                  loss=dict(
                      type="LabelSmoothCrossEntropyLoss",
                      neg_factor=0.1
@@ -64,7 +66,6 @@ class SeqHead(nn.Module):
                  ):
         super(SeqHead, self).__init__()
         self.num_bin = num_bin
-        assert multi_task in ["v1", "none"]
         self.multi_task = multi_task
         self.shuffle_fraction = shuffle_fraction
         assert mapping in ["relative", "absolute"]
@@ -113,7 +114,7 @@ class SeqHead(nn.Module):
         self.end = self.vocab_size - 1
         self.predictor = nn.Sequential(*predictor)
 
-        if multi_task == "v1":
+        if multi_task:
             # bbox_token, x1, y1, x2, y2, mask_token, x1, y1, ..., xN, yN
             self.task_embedding = nn.Embedding(2, self.d_model)
 
@@ -162,7 +163,7 @@ class SeqHead(nn.Module):
         """Args:
             gt_bbox (list[tensor]): [4, ].
 
-            gt_mask_vertices (tensor): [batch_size, 2 (x, y), num_ray].
+            gt_mask_vertices (tensor): [batch_size, 2 (in x, y order), num_ray].
         """
         with_bbox = gt_bbox is not None
         with_mask = gt_mask_vertices is not None
@@ -173,11 +174,10 @@ class SeqHead(nn.Module):
             seq_in_bbox = torch.vstack(gt_bbox)
 
         if with_mask:
-            seq_in_mask = gt_mask_vertices.transpose(
-                1, 2).reshape(batch_size, -1)
+            seq_in_mask = gt_mask_vertices.transpose(1, 2).reshape(batch_size, -1)
 
         if with_bbox and with_mask:
-            assert self.multi_task != "none"
+            assert self.multi_task
             seq_in = torch.cat([seq_in_bbox, seq_in_mask], dim=-1)
         elif with_bbox:
             seq_in = seq_in_bbox
@@ -225,19 +225,19 @@ class SeqHead(nn.Module):
                       gt_mask_vertices=None,
                       ):
         """Args:
-            x (tensor): [batch_size, c, h, w].
+            x_mm (tensor): [batch_size, c, h, w].
 
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
-                `macvg/datasets/pipelines/formatting.py:CollectData`.
+                `seqtr/datasets/pipelines/formatting.py:CollectData`.
 
             gt_bbox (list[tensor]): [4, ], [tl_x, tl_y, br_x, br_y] format,
-                in 'img_shape' scale.
+                and the coordinates are in 'img_shape' scale.
 
             gt_mask_vertices (list[tensor]): [batch_size, 2, num_ray], padded values are -1, 
-                in 'pad_shape' scale.
+                the coordinates are in 'pad_shape' scale.
         """
         with_bbox = gt_bbox is not None
         with_mask = gt_mask_vertices is not None
@@ -256,9 +256,9 @@ class SeqHead(nn.Module):
         loss_ce = self.loss(
             logits, targets, with_bbox=with_bbox, with_mask=with_mask)
 
+        # training statistics
         with torch.no_grad():
             if with_mask and with_bbox:
-                # bbox_token, x1, y1, x2, y2, mask_token, x1, y1, ..., xN, yN
                 logits_bbox = logits[:, :4, :-1]
                 scores_bbox = f.softmax(logits_bbox, dim=-1)
                 _, seq_out_bbox = scores_bbox.max(
@@ -285,9 +285,9 @@ class SeqHead(nn.Module):
 
     def loss(self, logits, targets, with_bbox=False, with_mask=False):
         """Args:
-            logits (tensor): [batch_size, 5/2*num_ray+1, vocab_size].
+            logits (tensor): [batch_size, 1+4 or 1+2*num_ray, vocab_size].
 
-            target (tensor): [batch_size, 5/2*num_ray+1].
+            target (tensor): [batch_size, 1+4 or 1+2*num_ray].
         """
         batch_size, num_token = logits.size()[:2]
 
@@ -312,20 +312,11 @@ class SeqHead(nn.Module):
         return loss_ce
 
     def forward_test(self, x_mm, img_metas, with_bbox=False, with_mask=False):
-        """Args:
-            x (tensor): [batch_size, c, h, w].
-
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `macvg/datasets/pipelines/formatting.py:CollectData`.
-        """
         x_mask, x_pos_embeds = self.transformer.x_mask_pos_enc(x_mm, img_metas)
-
         memory = self.transformer.forward_encoder(x_mm, x_mask, x_pos_embeds)
-
-        return self.generate_sequence(memory, x_mask, x_pos_embeds, with_bbox=with_bbox, with_mask=with_mask)
+        return self.generate_sequence(memory, x_mask, x_pos_embeds, 
+                                      with_bbox=with_bbox, 
+                                      with_mask=with_mask)
 
     def generate(self, seq_in_embeds, memory, x_pos_embeds, x_mask, decode_steps, with_mask):
         seq_out = []
@@ -334,7 +325,7 @@ class SeqHead(nn.Module):
                 seq_in_embeds, memory, x_pos_embeds, x_mask)
             logits = out[:, -1, :]
             logits = self.predictor(logits)
-            if self.multi_task == "v1":
+            if self.multi_task:
                 if step < 4:
                     logits = logits[:, :-1]
             else:
@@ -376,7 +367,6 @@ class SeqHead(nn.Module):
         """
         batch_size = memory.size(0)
         if with_bbox and with_mask:
-            # bbox_token, x1, y1, x2, y2, mask_token, x1, y1, ..., xN, yN
             task_bbox = self.task_embedding.weight[0].unsqueeze(
                 0).unsqueeze(0).expand(batch_size, -1, -1)
             seq_out_bbox = self.generate(

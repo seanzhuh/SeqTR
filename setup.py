@@ -94,7 +94,7 @@ def parse_requirements(fname='requirements.txt', with_version=True):
 
 if __name__ == '__main__':
     setup(
-        name='seqtr',
+        name='SeqTR',
         version=get_version(),
         description='SeqTR: A Simple yet Universal Network for Visual Grounding.',
         long_description=readme(),

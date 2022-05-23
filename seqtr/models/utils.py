@@ -174,10 +174,10 @@ class ExponentialMovingAverage(object):
 
     def apply_shadow(self):
         self.backup = self.get_model_state()
-        self.model.load_state_dict(self.shadow)
+        self.model.load_state_dict(self.shadow, strict=True)
 
     def restore(self):
-        self.model.load_state_dict(self.backup)
+        self.model.load_state_dict(self.backup, strict=True)
 
     def get_model_state(self):
         return {

@@ -29,16 +29,17 @@ def de_parallel(state_dict):
 def log_loaded_info(ckpt, load_file):
     logger = get_root_logger()
     log_str = f"loaded checkpoint from {load_file}\n"
+    best_d_acc, best_miou = 0., 0.
     if 'epoch' and 'lr' in ckpt:
         log_str += f"epoch: {ckpt['epoch']+1} lr: {ckpt['lr']:.6f}\n"
-    if "best_det_acc" in ckpt:
-        log_str += f"best det acc: {ckpt['best_det_acc']:.2f}\n"
-        best_d_acc = ckpt['best_det_acc']
+    if "best_d_acc" in ckpt:
+        log_str += f"best det acc: {ckpt['best_d_acc']:.2f}\n"
+        best_d_acc = ckpt['best_d_acc']
     if "best_miou" in ckpt:
         log_str += f"best mIoU: {ckpt['best_miou']:.2f}\n"
         best_miou = ckpt['best_miou']
-    if "det_acc" in ckpt:
-        log_str += f"loaded det acc: {ckpt['det_acc']:.2f}\n"
+    if "d_acc" in ckpt:
+        log_str += f"loaded det acc: {ckpt['d_acc']:.2f}\n"
     if "miou" in ckpt:
         log_str += f"loaded mIoU: {ckpt['miou']:.2f}\n"
     logger.info(log_str)
@@ -46,12 +47,12 @@ def log_loaded_info(ckpt, load_file):
 
 
 # only for finetuning, if resume from pretraining, use load_checkpoint
-def load_pretrained(model,
-                    model_ema=None,
-                    load_pretrained_from=None,
-                    amp=False):
+def load_pretrained_checkpoint(model,
+                               model_ema=None,
+                               finetune_from=None,
+                               amp=False):
     start_epoch, best_d_acc, best_miou = -1, 0., 0.
-    ckpt = torch.load(load_pretrained_from,
+    ckpt = torch.load(finetune_from,
                       map_location=lambda storage, loc: storage.cuda())
     state, ema_state = ckpt['state_dict'], ckpt['ema_state_dict']
     state = de_parallel(state)
@@ -75,7 +76,7 @@ def load_pretrained(model,
         apex.amp.load_state_dict(ckpt['amp'])
     if is_main():
         best_d_acc, best_miou = log_loaded_info(
-            ckpt, load_pretrained_from)
+            ckpt, finetune_from)
     return start_epoch, best_d_acc, best_miou
 
 
@@ -87,7 +88,8 @@ def load_checkpoint(model,
                     optimizer=None,
                     scheduler=None):
     start_epoch, best_d_acc, best_miou = -1, 0., 0.
-    load_file = resume_from if resume_from is not None else load_from
+    assert not (resume_from is not None and load_from is not None)
+    load_file = resume_from or load_from
     ckpt = torch.load(load_file,
                       map_location=lambda storage, loc: storage.cuda())
     state = ckpt['state_dict']
@@ -132,18 +134,18 @@ def save_checkpoint(work_dir, interval, model, model_ema, optimizer, scheduler, 
         checkpoint.update({'ema_state_dict': model_ema.shadow})
     latest_path = osp.join(work_dir, "latest.pth")
     det_best_path = osp.join(work_dir, "det_best.pth")
-    mask_best_path = osp.join(work_dir, "mask_best.pth")
+    segm_best_path = osp.join(work_dir, "segm_best.pth")
     torch.save(checkpoint, latest_path)
     if is_main():
         logger.info(
             f"saved epoch {epoch} checkpoint at {latest_path}")
     if interval > 0 and epoch % interval == 0:
         torch.save(checkpoint, osp.join(work_dir, f'epoch_{epoch}.pth'))
-    if checkpoint['det_acc'] > checkpoint['best_det_acc']:
+    if checkpoint['d_acc'] > checkpoint['best_d_acc']:
         shutil.copyfile(latest_path, det_best_path)
         if is_main():
             logger.info(f"saved epoch {epoch} checkpoint at {det_best_path}")
     if checkpoint['miou'] > checkpoint['best_miou']:
-        shutil.copyfile(latest_path, mask_best_path)
+        shutil.copyfile(latest_path, segm_best_path)
         if is_main():
-            logger.info(f"saved epoch {epoch} checkpoint at {mask_best_path}")
+            logger.info(f"saved epoch {epoch} checkpoint at {segm_best_path}")

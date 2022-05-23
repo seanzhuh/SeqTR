@@ -1,6 +1,7 @@
 apex
 mmdet
 mmcv-full
+pydantic
 pycocotools; platform_system == "Linux"
 torch
 numpy

@@ -44,19 +44,19 @@ class SimpleFusion(nn.Module):
 
     def forward(self, x, y):
         """Args
-            x (list[tensor]): multi-scale feature maps from visual backbone,
+            x (list[tensor]): multi-scale feature maps from visual encoders,
                 e.g., for darknet, it's [batch_size, 256, 52, 52], [batch_size, 512, 26, 26],
                 [batch_size, 1024, 13, 13] in sequential order.
 
-            y (tensor): [batch_size, 1, D*hidden_size / D*lstm_cfg.num_layers*hidden_size].
+            y (tensor): [batch_size, 1, C_l].
 
-            y_word (tensor): [batch_size, max_token, D*hidden_size].
+            y_word (tensor): [batch_size, max_token, C_l].
 
             y_mask (tensor): [batch_size, max_token], dtype=torch.bool, 
                 True means ignored position.
 
         Returns:
-            x_m (tensor): [batch_size, 512, 13, 13]
+            x_multi_modal (tensor): [batch_size, 512, 13, 13]
         """
         if self.direction == 'bottom_up':
             l, m, s = x

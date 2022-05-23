@@ -1,13 +1,14 @@
 import argparse
-from mmcv.utils import Config, DictAction
-
 import torch.distributed as dist
-from seqtr.apis import validate_model, set_random_seed
+
+from seqtr.apis import evaluate_model, set_random_seed
 from seqtr.datasets import build_dataset, build_dataloader
 from seqtr.models import build_model, ExponentialMovingAverage
-from seqtr.utils import get_root_logger, load_checkpoint, init_dist, is_main, load_pretrained
+from seqtr.utils import (get_root_logger, load_checkpoint, init_dist, 
+                         is_main, load_pretrained_checkpoint)
 
 from mmcv.runner import get_dist_info
+from mmcv.utils import Config, DictAction
 from mmcv.parallel import MMDistributedDataParallel
 try:
     import apex
@@ -25,25 +26,30 @@ def main_worker(cfg):
         logger = get_root_logger()
         logger.info(cfg.pretty_text)
 
-    if cfg.dataset == "PretrainingVG":
-        prefix = ['val_refcoco_unc', 'val_refcocoplus_unc', 'val_refcocog_umd']
-        datasets_cfg = [cfg.data.train,
+    if cfg.dataset == "Mixed":
+        prefix = ['val_refcoco_unc', 
+                  'val_refcocoplus_unc', 
+                  'val_refcocog_umd',
+                  'val_referitgame_berkeley',
+                  'val_flickr30k']
+        datasets_cfgs = [cfg.data.train,
                         cfg.data.val_refcoco_unc,
                         cfg.data.val_refcocoplus_unc,
-                        cfg.data.val_refcocog_umd]
+                        cfg.data.val_refcocog_umd,
+                        cfg.data.val_referitgame_berkeley,
+                        cfg.data.val_flickr30k]
     else:
         prefix = ['val']
-        datasets_cfg = [cfg.data.train, cfg.data.val]
+        datasets_cfgs = [cfg.data.train, cfg.data.val]
         if hasattr(cfg.data, 'testA') and hasattr(cfg.data, 'testB'):
-            datasets_cfg.append(cfg.data.testA)
-            datasets_cfg.append(cfg.data.testB)
+            datasets_cfgs.append(cfg.data.testA)
+            datasets_cfgs.append(cfg.data.testB)
             prefix.extend(['testA', 'testB'])
         elif hasattr(cfg.data, 'test'):
-            datasets_cfg.append(cfg.data.test)
+            datasets_cfgs.append(cfg.data.test)
             prefix.extend(['test'])
-    datasets = list(map(build_dataset, datasets_cfg))
-    dataloaders = list(
-        map(lambda dataset: build_dataloader(cfg, dataset), datasets[1:]))
+    datasets = list(map(build_dataset, datasets_cfgs))
+    dataloaders = list(map(lambda dataset: build_dataloader(cfg, dataset), datasets[1:]))
 
     model = build_model(cfg.model,
                         word_emb=datasets[0].word_emb,
@@ -57,28 +63,24 @@ def main_worker(cfg):
                 m.fp16_enabled = True
     if cfg.distributed:
         model = MMDistributedDataParallel(model, device_ids=[cfg.rank])
-    model_ema = ExponentialMovingAverage(
-        model, cfg.ema_factor) if cfg.ema else None
+    model_ema = ExponentialMovingAverage(model, cfg.ema_factor) if cfg.ema else None
     if cfg.load_from:
-        eval_epoch, _, _ = load_checkpoint(
-            model, model_ema, None, cfg.load_from)
-    elif cfg.load_pretrained_from:
+        load_checkpoint(model, model_ema, load_from=cfg.load_from)
+    elif cfg.finetune_from:
         # hacky way
-        eval_epoch = 0
-        start_epoch, best_det_acc, best_mask_iou = load_pretrained(
-            model, model_ema, cfg.load_pretrained_from, amp=cfg.use_fp16)
+        load_pretrained_checkpoint(model, model_ema, cfg.finetune_from, amp=cfg.use_fp16)
 
     for eval_loader, _prefix in zip(dataloaders, prefix):
         if is_main():
             logger = get_root_logger()
-            logger.info(f"macvg - evaluating set {_prefix}")
-        validate_model(eval_epoch, cfg, model, eval_loader)
+            logger.info(f"SeqTR - evaluating set {_prefix}")
+        evaluate_model(-1, cfg, model, eval_loader)
         if cfg.ema:
             if is_main():
                 logger = get_root_logger()
-                logger.info(f"macvg - evaluating set {_prefix} using ema")
+                logger.info(f"SeqTR - evaluating set {_prefix} using ema")
             model_ema.apply_shadow()
-            validate_model(eval_epoch, cfg, model, eval_loader)
+            evaluate_model(-1, cfg, model, eval_loader)
             model_ema.restore()
 
     if cfg.distributed:
@@ -86,12 +88,12 @@ def main_worker(cfg):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="macvg-test")
-    parser.add_argument('config', help='test config file path')
+    parser = argparse.ArgumentParser(description="SeqTR-test")
+    parser.add_argument('config', help='test configuration file path.')
     parser.add_argument(
-        '--load-from', help='the checkpoint file to load from.')
+        '--load-from', help='load from the saved .pth checkpoint, only used in validation.')
     parser.add_argument(
-        '--load-pretrained-from', help='the pretrained checkpoint file to load from.')
+        '--finetune-from', help='load from the pretrained checkpoint, only used in validation.')
     parser.add_argument(
         '--launcher', choices=['none', 'pytorch'], default='none')
     parser.add_argument(
@@ -114,7 +116,7 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     cfg.load_from = args.load_from
-    cfg.load_pretrained_from = args.load_pretrained_from
+    cfg.finetune_from = args.finetune_from
     cfg.launcher = args.launcher
 
     if cfg.seed is not None:

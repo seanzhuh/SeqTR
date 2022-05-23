@@ -8,4 +8,4 @@ log_interval = 50
 save_interval = -1
 resume_from = None
 load_from = None
-load_pretrained_from = None
+finetune_from = None

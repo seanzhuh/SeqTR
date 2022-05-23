@@ -39,12 +39,13 @@ class LSTM(nn.Module):
     def forward(self, ref_expr_inds):
         """Args:
             ref_expr_inds (tensor): [batch_size, max_token], 
-                index of each word in vocabulary, with 0 padded tokens at last.
+                integer index of each word in the vocabulary,
+                padded tokens are 0s at the last.
 
         Returns:
-            y (tensor): [batch_size, 1, D*hidden_size / D*lstm_cfg.num_layers*hidden_size].
+            y (tensor): [batch_size, 1, C_l].
 
-            y_word (tensor): [batch_size, max_token, D*hidden_size].
+            y_word (tensor): [batch_size, max_token, C_l].
 
             y_mask (tensor): [batch_size, max_token], dtype=torch.bool, 
                 True means ignored position.
@@ -53,20 +54,16 @@ class LSTM(nn.Module):
 
         y_word = self.embedding(ref_expr_inds)
 
-        # [batch_size, max_token, D*hidden_size], D == 2 if bidirectional else 1.
-        # [D*lstm_cfg.num_layers, batch_size, hidden_size].
         y_word, h = self.lstm(y_word)
-        h = h.transpose(0, 1)
 
         if self.output_type == "mean":
-            # [batch_size, 1, D*hidden_size]
             y = torch.cat(list(map(lambda feat, mask: torch.mean(
                 feat[mask, :], dim=0, keepdim=True), y_word, ~y_mask))).unsqueeze(1)
         elif self.output_type == "max":
             y = torch.cat(list(map(lambda feat, mask: torch.max(
                 feat[mask, :], dim=0, keepdim=True)[0], y_word, ~y_mask))).unsqueeze(1)
         elif self.output_type == "default":
-            # [batch_size, 1, D*lstm_cfg.num_layers*hidden_size]
+            h = h.transpose(0, 1)
             y = h.flatten(1).unsqueeze(1)
 
         return y

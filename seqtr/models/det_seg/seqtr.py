@@ -40,13 +40,13 @@ class SeqTR(OneStageModel):
                 has: 'img_shape', 'scale_factor', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
-                `macvg/datasets/pipelines/formatting.py:CollectData`.
+                `seqtr/datasets/pipelines/formatting.py:CollectData`.
 
             gt_bbox (list[tensor]): [4, ], in [tl_x, tl_y, br_x, br_y] format,
-                in 'img_shape' scale.
+                the coordinates are in 'img_shape' scale.
 
             gt_mask_vertices (list[tensor]): [batch_size, 2, num_ray], padded values are -1, 
-                in 'pad_shape' scale.
+                the coordinates are in 'pad_shape' scale.
 
             rescale (bool): whether to rescale predictions from `img_shape`/`pad_shape`
                 back to `ori_shape`.
@@ -110,12 +110,6 @@ class SeqTR(OneStageModel):
     def get_predictions(self, seq_out_dict, img_metas, rescale=False):
         """Args:
             seq_out_dict (dict[tensor]): [batch_size, 4/2*num_ray+1].
-
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `macvg/datasets/pipelines/formatting.py:CollectData`.
 
             rescale (bool): whether to rescale predictions from `img_shape`/`pad_shape`
                 back to `ori_shape`.

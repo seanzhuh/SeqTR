@@ -1,4 +1,4 @@
-dataset = 'PretrainingVG'
+dataset = 'Mixed'
 data_root = './data/'
 img_norm_cfg = dict(
     mean=[0., 0., 0.], std=[1., 1., 1.])
@@ -33,7 +33,7 @@ data = dict(
         type=dataset,
         which_set='train',
         img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
-        annsfile=data_root + 'annotations/pretraining-vg/instances.json',
+        annsfile=data_root + 'annotations/mixed/instances.json',
         imgsfile=dict(
             coco=data_root + 'images/mscoco/train2014',
             vg=data_root + 'images/visual-genome',
@@ -41,12 +41,13 @@ data = dict(
             flickr=data_root + 'images/flickr30k'
         ),
         pipeline=train_pipeline,
-        word_emb_cfg=word_emb_cfg),
+        word_emb_cfg=word_emb_cfg
+    ),
     val_refcoco_unc=dict(
         type=dataset,
         which_set='val_refcoco_unc',
         img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
-        annsfile=data_root + 'annotations/pretraining-vg/instances.json',
+        annsfile=data_root + 'annotations/mixed/instances.json',
         imgsfile=dict(
             coco=data_root + 'images/mscoco/train2014',
             vg=data_root + 'images/visual-genome',
@@ -54,12 +55,13 @@ data = dict(
             flickr=data_root + 'images/flickr30k'
         ),
         pipeline=val_pipeline,
-        word_emb_cfg=word_emb_cfg),
+        word_emb_cfg=word_emb_cfg
+    ),
     val_refcocoplus_unc=dict(
         type=dataset,
         which_set='val_refcocoplus_unc',
         img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
-        annsfile=data_root + 'annotations/pretraining-vg/instances.json',
+        annsfile=data_root + 'annotations/mixed/instances.json',
         imgsfile=dict(
             coco=data_root + 'images/mscoco/train2014',
             vg=data_root + 'images/visual-genome',
@@ -67,12 +69,13 @@ data = dict(
             flickr=data_root + 'images/flickr30k'
         ),
         pipeline=test_pipeline,
-        word_emb_cfg=word_emb_cfg),
+        word_emb_cfg=word_emb_cfg
+    ),
     val_refcocog_umd=dict(
         type=dataset,
         which_set='val_refcocog_umd',
         img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
-        annsfile=data_root + 'annotations/pretraining-vg/instances.json',
+        annsfile=data_root + 'annotations/mixed/instances.json',
         imgsfile=dict(
             coco=data_root + 'images/mscoco/train2014',
             vg=data_root + 'images/visual-genome',
@@ -80,5 +83,34 @@ data = dict(
             flickr=data_root + 'images/flickr30k'
         ),
         pipeline=test_pipeline,
-        word_emb_cfg=word_emb_cfg)
+        word_emb_cfg=word_emb_cfg
+    ),
+    val_referitgame_berkeley=dict(
+        type=dataset,
+        which_set='val_referitgame_berkeley',
+        img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
+        annsfile=data_root + 'annotations/mixed/instances.json',
+        imgsfile=dict(
+            coco=data_root + 'images/mscoco/train2014',
+            vg=data_root + 'images/visual-genome',
+            saiaprtc12=data_root + 'images/saiaprtc12',
+            flickr=data_root + 'images/flickr30k'
+        ),
+        pipeline=test_pipeline,
+        word_emb_cfg=word_emb_cfg
+    ),
+    val_flickr30k=dict(
+        type=dataset,
+        which_set='val_flickr30k',
+        img_source=['coco', 'flickr', 'visual-genome', 'saiaprtc12'],
+        annsfile=data_root + 'annotations/mixed/instances.json',
+        imgsfile=dict(
+            coco=data_root + 'images/mscoco/train2014',
+            vg=data_root + 'images/visual-genome',
+            saiaprtc12=data_root + 'images/saiaprtc12',
+            flickr=data_root + 'images/flickr30k'
+        ),
+        pipeline=test_pipeline,
+        word_emb_cfg=word_emb_cfg
+    )
 )

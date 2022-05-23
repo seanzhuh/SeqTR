@@ -5,10 +5,10 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as f
+from torch.nn.modules.transformer import _get_clones
 
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.runner.base_module import BaseModule
-from torch.nn.modules.transformer import _get_clones
 from mmcv.cnn import ConvModule, build_activation_layer
 from mmcv.cnn.bricks.transformer import build_positional_encoding, POSITIONAL_ENCODING
 
@@ -25,9 +25,9 @@ class LinearModule(nn.Module):
     `build_activation_layer()` and `build_dropout`.
 
     Args:
-        linear_cfg (dict): Config dict for activation layer. Default: dict(type='Linear', bias=True)
-        act_cfg (dict): Config dict for activation layer. Default: dict(type='ReLU', inplace=True).
-        drop_cfg (dict): Config dict for dropout layer. Default: dict(type='Dropout', drop_prob=0.5)
+        linear (dict): Config dict for activation layer. Default: dict(type='Linear', bias=True)
+        act (dict): Config dict for activation layer. Default: dict(type='ReLU', inplace=True).
+        drop (dict): Config dict for dropout layer. Default: dict(type='Dropout', drop_prob=0.5)
     """
 
     def __init__(self,
@@ -302,17 +302,7 @@ class TransformerDecoderWithPositionEmbedding(nn.Module):
 
 @TRANSFORMER.register_module()
 class AutoRegressiveTransformer(BaseModule):
-    """Implements the Pix2Seq transformer.
-
-    Following the official DETR implementation, this module copy-paste
-    from torch.nn.Transformer with modifications:
-
-        * positional encodings are passed in MultiheadAttention
-        * extra LN at the end of encoder is removed
-        * decoder returns a stack of activations from all decoding layers
-
-    See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
+    """Implements the Auto-regressive transformer.
 
     Args:
         encoder (`mmcv.ConfigDict` | Dict): Config of
@@ -397,12 +387,6 @@ class AutoRegressiveTransformer(BaseModule):
     def forward_encoder(self, x, x_mask, x_pos_embeds):
         """Args:
             x (Tensor): [batch_size, c, h, w].
-
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `rec/datasets/pipelines/formatting.py:CollectData`. 
 
             x_mask (tensor): [batch_size, h, w], dtype is torch.bool, True means
                 ignored positions.

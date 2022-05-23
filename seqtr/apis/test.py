@@ -48,7 +48,7 @@ def accuracy(pred_bboxes, gt_bbox, pred_masks, gt_mask, is_crowd=None, device="c
     return det_acc * 100., mask_iou * 100., mask_acc_at_thrs * 100.
 
 
-def validate_model(epoch,
+def evaluate_model(epoch,
                    cfg,
                    model,
                    loader):

@@ -11,9 +11,9 @@ from mmcv.parallel import MMDistributedDataParallel
 from seqtr.core import build_optimizer, build_scheduler
 from seqtr.datasets import build_dataset, build_dataloader
 from seqtr.models import build_model, ExponentialMovingAverage
-from seqtr.apis import set_random_seed, train_model, validate_model
+from seqtr.apis import set_random_seed, train_model, evaluate_model
 from seqtr.utils import (get_root_logger, load_checkpoint, save_checkpoint,
-                         load_pretrained, is_main, init_dist)
+                         load_pretrained_checkpoint, is_main, init_dist)
 
 try:
     import apex
@@ -22,15 +22,13 @@ except:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="macvg-train")
-    parser.add_argument('config', help='train config file path')
-    parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser = argparse.ArgumentParser(description="SeqTR-train")
+    parser.add_argument('config', help='training configuration file path.')
+    parser.add_argument('--work-dir', help='directory of config file, training logs, and checkpoints.')
     parser.add_argument(
-        '--resume-from', help='the checkpoint file to resume from')
-    parser.add_argument(
-        '--load-from', help='the checkpoint file to initialize from')
-    parser.add_argument('--load-pretrained-from',
-                        help='the checkpoint file to finetune from')
+        '--resume-from', help='resume training from the saved .pth checkpoint, only used in training.')
+    parser.add_argument('--finetune-from',
+                        help='finetune from the saved .pth checkpoint, only used after SeqTR has been pre-trained on the merged dadtaset.')
     parser.add_argument(
         '--launcher', choices=['none', 'pytorch'], default='none')
     parser.add_argument(
@@ -60,16 +58,14 @@ def main_worker(cfg):
         cfg.dump(
             osp.join(cfg.work_dir, f'{cfg.timestamp}_' + osp.basename(cfg.config)))
 
-    if cfg.dataset == "PretrainingVG":
-        datasets = list(map(build_dataset, (cfg.data.train,
-                                            cfg.data.val_refcoco_unc,
-                                            cfg.data.val_refcocoplus_unc,
-                                            cfg.data.val_refcocog_umd)))
-    else:
-        datasets = list(
-            map(build_dataset, (cfg.data.train, cfg.data.val)))
-    dataloaders = list(
-        map(lambda dataset: build_dataloader(cfg, dataset), datasets))
+    datasets_cfgs = [cfg.data.train]
+    datasets_cfgs += [cfg.data.val_refcoco_unc,
+                      cfg.data.val_refcocoplus_unc,
+                      cfg.data.val_refcocog_umd,
+                      cfg.data.val_referitgame_berkeley,
+                      cfg.data.val_flickr30k] if cfg.dataset == "Mixed" else [cfg.data.val]
+    datasets = list(map(build_dataset, datasets_cfgs))
+    dataloaders = list(map(lambda dataset: build_dataloader(cfg, dataset), datasets))
 
     model = build_model(cfg.model,
                         word_emb=datasets[0].word_emb,
@@ -80,19 +76,8 @@ def main_worker(cfg):
 
     model = model.cuda()
     if model.vis_enc.do_train:
-        train_params = [
-            {
-                "params": [
-                    p
-                    for n, p in model.named_parameters()
-                    if "vis_enc" not in n and p.requires_grad
-                ]
-            },
-            {
-                "params": [p for n, p in model.named_parameters() if "vis_enc" in n and p.requires_grad],
-                "lr": cfg.optimizer_config.lr / 10.,
-            },
-        ]
+        train_params = [{"params": [p for n, p in model.named_parameters() if "vis_enc" not in n and p.requires_grad]},
+                        {"params": [p for n, p in model.named_parameters() if "vis_enc" in n and p.requires_grad], "lr": cfg.optimizer_config.lr / 10.,}]
     else:
         train_params = filter(lambda p: p.requires_grad, model.parameters())
 
@@ -107,19 +92,17 @@ def main_worker(cfg):
                 m.fp16_enabled = True
     if cfg.distributed:
         model = MMDistributedDataParallel(model, device_ids=[cfg.rank])
-    model_ema = ExponentialMovingAverage(
-        model, cfg.ema_factor) if cfg.ema else None
+    model_ema = ExponentialMovingAverage(model, cfg.ema_factor) if cfg.ema else None
 
-    start_epoch, best_det_acc, best_mask_iou = -1, 0., 0.
-    if cfg.resume_from or cfg.load_from:
-        start_epoch, best_det_acc, best_mask_iou = load_checkpoint(
-            model, model_ema, cfg.resume_from, cfg.load_from,
+    start_epoch, best_d_acc, best_miou = -1, 0., 0.
+    if cfg.resume_from:
+        start_epoch, _, _ = load_checkpoint(
+            model, model_ema, cfg.resume_from,
             amp=cfg.use_fp16,
             optimizer=optimizer,
             scheduler=scheduler)
-    elif cfg.load_pretrained_from:
-        start_epoch, best_det_acc, best_mask_iou = load_pretrained(
-            model, model_ema, cfg.load_pretrained_from, amp=cfg.use_fp16)
+    elif cfg.finetune_from:
+        load_pretrained_checkpoint(model, model_ema, cfg.finetune_from, amp=cfg.use_fp16)
 
     for epoch in range(start_epoch + 1, cfg.scheduler_config.max_epoch):
         train_model(epoch, cfg, model, model_ema, optimizer, dataloaders[0])
@@ -127,18 +110,14 @@ def main_worker(cfg):
         d_acc, miou = 0, 0
         for _loader in dataloaders[1:]:
             if is_main():
-                logger.info("Evaluating dataset: {}".format(
-                    _loader.dataset.which_set))
-            set_d_acc, set_miou = validate_model(
-                epoch, cfg, model, _loader)
+                logger.info("Evaluating dataset: {}".format(_loader.dataset.which_set))
+            set_d_acc, set_miou = evaluate_model(epoch, cfg, model, _loader)
 
             if cfg.ema:
                 if is_main():
-                    logger.info("Evaluating dataset using ema: {}".format(
-                        _loader.dataset.which_set))
+                    logger.info("Evaluating dataset using ema: {}".format(_loader.dataset.which_set))
                 model_ema.apply_shadow()
-                ema_set_d_acc, ema_set_miou = validate_model(
-                    epoch, cfg, model, _loader)
+                ema_set_d_acc, ema_set_miou = evaluate_model(epoch, cfg, model, _loader)
                 model_ema.restore()
 
             if cfg.ema:
@@ -156,16 +135,16 @@ def main_worker(cfg):
                             cfg.save_interval,
                             model, model_ema, optimizer, scheduler,
                             {'epoch': epoch,
-                             'det_acc': d_acc,
+                             'd_acc': d_acc,
                              'miou': miou,
-                             'best_det_acc': best_det_acc,
-                             'best_miou': best_mask_iou,
-                             'use_fp16': cfg.use_fp16})
+                             'best_d_acc': best_d_acc,
+                             'best_miou': best_miou,
+                             'amp': cfg.use_fp16})
 
         scheduler.step()
 
-        best_det_acc = max(d_acc, best_det_acc)
-        best_mask_iou = max(miou, best_mask_iou)
+        best_d_acc = max(d_acc, best_d_acc)
+        best_miou = max(miou, best_miou)
 
         if cfg.distributed:
             dist.barrier()
@@ -187,11 +166,8 @@ def main():
             osp.splitext(osp.basename(args.config))[0]
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    if args.load_from is not None:
-        cfg.load_from = args.load_from
-    if args.load_pretrained_from is not None:
-        cfg.load_pretrained_from = args.load_pretrained_from
-    assert not (cfg.load_from and cfg.resume_from)
+    if args.finetune_from is not None:
+        cfg.finetune_from = args.finetune_from
     cfg.launcher = args.launcher
     cfg.config = args.config
 
