@@ -116,22 +116,22 @@ Note that both during pre-training and fune-tuning stage, we disable Large Scale
 
 <table>
 <tr>
-<td></td><td>val</td><td>testA</td><td>testB</td><td align="center">url</td>
+<td></td><td align="center">val</td><td align="center">testA</td><td align="center">testB</td><td align="center">url</td>
 </tr>
 <tr>
-<td>SeqTR detection</td><td>81.23</td><td>85.00</td><td>76.08</td><td><a href="https://pan.baidu.com/s/1m70hE43XTqpUPaZ8rbPSDg?pwd=hh3q">model & log</a></td>
+<td>SeqTR detection</td><td align="center">81.23</td><td align="center">85.00</td><td align="center">76.08</td><td align="center"><a href="https://pan.baidu.com/s/1m70hE43XTqpUPaZ8rbPSDg?pwd=hh3q">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR* detection</td><td>83.72</td><td>86.51</td><td>81.24</td><td><a href="https://pan.baidu.com/s/1QlisArPe8_XIxBLOzY247A?pwd=of7w">model & log</a></td>
+<td>SeqTR* detection</td><td align="center">83.72</td><td align="center">86.51</td><td align="center">81.24</td><td align="center"><a href="https://pan.baidu.com/s/1QlisArPe8_XIxBLOzY247A?pwd=of7w">model & log</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR detection</td><td>87.00</td><td>90.15</td><td>83.59</td><td><a href="https://pan.baidu.com/s/1nC-DtTlAesSXYjUFzOnG6A?pwd=wknb">model & log</a></td>
+<td>pre-trained + fine-tuned SeqTR detection</td><td align="center">87.00</td><td align="center">90.15</td><td align="center">83.59</td><td align="center"><a href="https://pan.baidu.com/s/1nC-DtTlAesSXYjUFzOnG6A?pwd=wknb">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR segmentation</td><td>67.26</td><td>69.79</td><td>64.12</td><td><a href="https://pan.baidu.com/s/1FEHxWwkhbN6ouwtSG3K2Tg?pwd=j978">model & log</a></td>
+<td>SeqTR segmentation</td><td align="center">67.26</td><td align="center">69.79</td><td align="center">64.12</td><td align="center"><a href="https://pan.baidu.com/s/1FEHxWwkhbN6ouwtSG3K2Tg?pwd=j978">model & log</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR segmentation</td><td>71.70</td><td>73.31</td><td>69/82</td><td><a href="">-</a></td>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td align="center">71.70</td><td align="center">73.31</td><td align="center">69/82</td><td align="center"><a href="">-</a></td>
 </tr>
 </table>
 
@@ -139,22 +139,22 @@ Note that both during pre-training and fune-tuning stage, we disable Large Scale
 
 <table>
 <tr>
-<td></td><td>val</td><td>testA</td><td>testB</td><td align="center">url</td>
+<td></td><td align="center">val</td><td align="center">testA</td><td align="center">testB</td><td align="center">url</td>
 </tr>
 <tr>
-<td>SeqTR detection</td><td>68.82</td><td>75.37</td><td>58.78</td><td><a href="https://pan.baidu.com/s/10IXsNKDbsZ_zba8tQZPgkg?pwd=1vw8">model & log</a></td>
+<td>SeqTR detection</td><td align="center">68.82</td><td align="center">75.37</td><td align="center">58.78</td><td align="center"><a href="https://pan.baidu.com/s/10IXsNKDbsZ_zba8tQZPgkg?pwd=1vw8">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR* detection</td><td>71.45</td><td>76.26</td><td>64.88</td><td><a href="https://pan.baidu.com/s/1aa7fBWtOiaBlTYb7Tig6iw?pwd=o5vd">model & log</a></td>
+<td>SeqTR* detection</td><td align="center">71.45</td><td align="center">76.26</td><td align="center">64.88</td><td align="center"><a href="https://pan.baidu.com/s/1aa7fBWtOiaBlTYb7Tig6iw?pwd=o5vd">model & log</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR detection</td><td>78.69</td><td>84.51</td><td>71.87</td><td><a href="">-</a></td>
+<td>pre-trained + fine-tuned SeqTR detection</td><td align="center">78.69</td><td align="center">84.51</td><td align="center">71.87</td><td align="center"><a href="">-</a></td>
 </tr>
 <tr>
-<td>SeqTR segmentation</td><td>54.14</td><td>58.93</td><td>48.19</td><td><a href="">-</a></td>
+<td>SeqTR segmentation</td><td align="center">54.14</td><td align="center">58.93</td><td align="center">48.19</td><td align="center"><a href="">-</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR segmentation</td><td>63.04</td><td>66.73</td><td>58.97</td><td><a href="">-</a></td>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td align="center">63.04</td><td align="center">66.73</td><td align="center">58.97</td><td align="center"><a href="">-</a></td>
 </tr>
 </table>
 
@@ -162,22 +162,22 @@ Note that both during pre-training and fune-tuning stage, we disable Large Scale
 
 <table>
 <tr>
-<td></td><td>val-g</td><td align="center">url</td><td>val-u</td><td>val-u</td><td align="center">url</td>
+<td></td><td align="center">val-g</td><td align="center">url</td><td align="center">val-u</td><td align="center">test-u</td><td align="center">url</td>
 </tr>
 <tr>
-<td>SeqTR detection</td><td>-</td><td>-</td><td>71.35</td><td>71.58</td><td><a href="https://pan.baidu.com/s/1fObNiIxgWrBy31AkXj9krg?pwd=b6ji">model & log</a></td>
+<td>SeqTR detection</td><td align="center">-</td><td align="center">-</td><td align="center">71.35</td><td align="center">71.58</td><td align="center"><a href="https://pan.baidu.com/s/1fObNiIxgWrBy31AkXj9krg?pwd=b6ji">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR* detection</td><td>71.50</td><td><a href="https://pan.baidu.com/s/1v_fEGMWVXPoQKueBoXcjDQ?pwd=d1kp">model & log</a></td><td>74.86</td><td>74.21</td><td><a href="https://pan.baidu.com/s/1g-3XdzLow27pcIUug2KuhA?pwd=23tj">model & log</a></td>
+<td>SeqTR* detection</td><td align="center">71.50</td><td align="center"><a href="https://pan.baidu.com/s/1v_fEGMWVXPoQKueBoXcjDQ?pwd=d1kp">model & log</a></td><td align="center">74.86</td><td align="center">74.21</td><td align="center"><a href="https://pan.baidu.com/s/1g-3XdzLow27pcIUug2KuhA?pwd=23tj">model & log</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR detection</td><td>-</td><td><a>-</a></td><td>82.69</td><td>83.37</td><td><a href="https://pan.baidu.com/s/1-0a_qz8bHTzdbIsN5mDaOg?pwd=pji5">model & log</a></td>
+<td>pre-trained + fine-tuned SeqTR detection</td><td align="center">-</td><td align="center"><a>-</a></td><td align="center">82.69</td><td align="center">83.37</td><td align="center"><a href="https://pan.baidu.com/s/1-0a_qz8bHTzdbIsN5mDaOg?pwd=pji5">model & log</a></td>
 </tr>
 <tr>
-<td>SeqTR segmentation</td><td>-</td><td>-</td><td>55.67</td><td>55.64</td><td><a href="https://pan.baidu.com/s/18G6SSuEwEn0XtNEnj9taIg?pwd=ptpm">model & log</a></td>
+<td>SeqTR segmentation</td><td align="center">-</td><td align="center">-</td><td align="center">55.67</td><td align="center">55.64</td><td align="center"><a href="https://pan.baidu.com/s/18G6SSuEwEn0XtNEnj9taIg?pwd=ptpm">model & log</a></td>
 </tr>
 <tr>
-<td>pre-trained + fine-tuned SeqTR segmentation</td><td>-</td><td>-</td><td>64.69</td><td>65.74</td><td><a href="https://pan.baidu.com/s/1l-g4ji2T139MFxSBSOEGFQ?pwd=r36v">model & log</a></td>
+<td>pre-trained + fine-tuned SeqTR segmentation</td><td align="center">-</td><td align="center">-</td><td align="center">64.69</td><td align="center">65.74</td><td align="center"><a href="https://pan.baidu.com/s/1l-g4ji2T139MFxSBSOEGFQ?pwd=r36v">model & log</a></td>
 </tr>
 </table>
 
