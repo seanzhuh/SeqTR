@@ -6,6 +6,11 @@ This is the official implementation of [SeqTR: A Simple yet Universal Network fo
 
 <!-- To this end, different grounding tasks can be tackled in one network with the simple cross-entropy loss. We surpass or maintain on par with state-of-the-arts, and also outperform a set of larget-scale pre-trained models with much less expenditure, suggesting a simple and universal approach is indeed feasible. -->
 
+## News
+
+- **2022.07.04: Our work has been accepted by ECCV 2022.**
+
+
 ## Installation
 
 ### Prerequisites
