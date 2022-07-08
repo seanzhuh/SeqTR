@@ -8,7 +8,7 @@ This is the official implementation of [SeqTR: A Simple yet Universal Network fo
 
 ## News
 
-- **2022.07.04: Our work has been accepted by ECCV 2022.**
+- **2022.07.04: Our work has been accepted as oral by ECCV 2022.**
 
 
 ## Installation
