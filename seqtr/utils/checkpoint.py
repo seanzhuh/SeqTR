@@ -51,14 +51,14 @@ def load_pretrained_checkpoint(model,
                                model_ema=None,
                                finetune_from=None,
                                amp=False):
+    assert model_ema is None, "We do not use EMA during finetuning."
     start_epoch, best_d_acc, best_miou = -1, 0., 0.
     ckpt = torch.load(finetune_from,
                       map_location=lambda storage, loc: storage.cuda())
-    state, ema_state = ckpt['state_dict'], ckpt['ema_state_dict']
-    state = de_parallel(state)
-    ema_state = de_parallel(ema_state)
+    state = ckpt['state_dict']
+    if is_paral_state(state) and not is_paral_model(model):
+        state = de_parallel(state)
     state.pop("lan_enc.embedding.weight")
-    ema_state.pop("lan_enc.embedding.weight")
 
     model_seq_embed_dim = model.head.transformer.seq_positional_encoding.embedding.weight.size(
         0)
@@ -67,11 +67,7 @@ def load_pretrained_checkpoint(model,
     # finetuning on RES since pretraining is only performed on REC
     if model_seq_embed_dim != state_seq_embed_dim:
         state.pop("head.transformer.seq_positional_encoding.embedding.weight")
-        ema_state.pop(
-            "head.transformer.seq_positional_encoding.embedding.weight")
     model.load_state_dict(state, strict=False)
-    if model_ema is not None:
-        model_ema.shadow = ema_state
     if 'amp' in ckpt and amp:
         apex.amp.load_state_dict(ckpt['amp'])
     if is_main():
