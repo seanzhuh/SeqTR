@@ -205,4 +205,4 @@ Our codes are highly modularized and flexible to be extended to new architecture
 
 ## Acknowledgement
 
-Our code is built upon the open-sourced [mmcv](https://github.com/open-mmlab/mmcv) and [mmdetection](https://github.com/open-mmlab/mmdetection) libraries. 
+Our code is built upon the open-sourced [mmcv](https://github.com/open-mmlab/mmcv), [mmdetection](https://github.com/open-mmlab/mmdetection) and [detectron2](https://github.com/facebookresearch/detectron2) libraries. 
