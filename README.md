@@ -195,11 +195,13 @@ Our codes are highly modularized and flexible to be extended to new architecture
 ## Citation
 
 ```
-@article{zhu2022seqtr,
-  title={SeqTR: A Simple yet Universal Network for Visual Grounding},
-  author={Zhu, ChaoYang and Zhou, YiYi and Shen, YunHang and Luo, Gen and Pan, XingJia and Lin, MingBao and Chen, Chao and Cao, LiuJuan and Sun, XiaoShuai and Ji, RongRong},
-  journal={arXiv preprint arXiv:2203.16265},
-  year={2022}
+@inproceedings{zhu2022seqtr,
+  title={Seqtr: A simple yet universal network for visual grounding},
+  author={Zhu, Chaoyang and Zhou, Yiyi and Shen, Yunhang and Luo, Gen and Pan, Xingjia and Lin, Mingbao and Chen, Chao and Cao, Liujuan and Sun, Xiaoshuai and Ji, Rongrong},
+  booktitle={Computer Vision--ECCV 2022: 17th European Conference, Tel Aviv, Israel, October 23--27, 2022, Proceedings, Part XXXV},
+  pages={598--615},
+  year={2022},
+  organization={Springer}
 }
 ```
 
