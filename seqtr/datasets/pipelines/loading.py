@@ -1,4 +1,5 @@
 import re
+import copy
 import mmcv
 import numpy
 import torch
@@ -102,7 +103,7 @@ class LoadImageAnnotationsFromFile(object):
 
     def _load_bbox(self, results):
         if self.with_bbox:
-            gt_bbox = results['ann']['bbox']
+            gt_bbox = copy.deepcopy(results['ann']['bbox'])
             gt_bbox[2] = gt_bbox[0] + gt_bbox[2]
             gt_bbox[3] = gt_bbox[1] + gt_bbox[3]
             gt_bbox = numpy.array(
