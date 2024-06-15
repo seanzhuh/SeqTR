@@ -1,5 +1,7 @@
 # SeqTR
 
+If you want to run a demo for single image inference, please refer to [demo](./demo/README.md).
+
 ![overview](./teaser/overview.png)  
 
 This is the official implementation of [SeqTR: A Simple yet Universal Network for Visual Grounding](https://arxiv.org/abs/2203.16265), which simplifies and unifies the modelling for visual grounding tasks under a novel point prediction paradigm. 
@@ -187,6 +189,7 @@ Note that both during pre-training and fune-tuning stage, we disable Large Scale
 </table>
 
 SeqTR* denotes that its visual encoder is initialized with yolov3.weights, while the visual encoder of the rest are initialized with darknet.weights.
+
 
 ## Contributing
 

@@ -1,4 +1,4 @@
-num_ray = 18
+num_ray = 12
 d_model = 256
 num_bin = 1000
 model = dict(
