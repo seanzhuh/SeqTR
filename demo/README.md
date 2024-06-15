@@ -16,3 +16,7 @@
    python demo/webui.py --ckpt_dir YOUR_CHECKPOINT_DIR
    ```
    Noted that the `YOUR_CHECKPOINT_DIR` is the checkpoint directory(`ckpt` for default).
+
+## Attention
+
+You may need to modify `num_ray` in config file to adapt the checkpoint.
