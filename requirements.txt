@@ -5,3 +5,4 @@ pydantic
 pycocotools; platform_system == "Linux"
 torch
 numpy
+gradio
