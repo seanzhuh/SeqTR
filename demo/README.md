@@ -1,4 +1,4 @@
-# SegTR Demo
+# SeqTR Demo
 
 ![DEMO](../teaser/webui.png)
 
